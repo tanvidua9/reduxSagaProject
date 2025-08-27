@@ -2,7 +2,7 @@ export type Show={
     id:number;
     url:string;
     name:string;
-    genres:String[];
+    genres:string[];
     summary?:string;
     rating:{average?:number};
     image?:{

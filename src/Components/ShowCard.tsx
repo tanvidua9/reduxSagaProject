@@ -21,8 +21,7 @@ const ShowCard:FC<ShowCardProps>=({show})=>{
           <h2 className="text-3xl font-semibold tracking-wide">{show.name}</h2>
           {show.summary}
         </div>
-        <Link
-          to={"/show/1"+show.id}
+        <Link to={`/show/${show.id}`}
           className="flex items-center justify-center w-full p-3 font-semibold tracking-wide rounded-md"
         >
           View Details

@@ -1,41 +1,46 @@
-import { type FC } from "react";
+import { useEffect, type FC } from "react";
 import CastCard from "../Components/CastCard";
 import GenrePill from "../Components/GenrePill";
 import withRouter, { type WithRouterProps } from "../hocs/withRouter";
 import { Link } from "react-router-dom";
 import {IoArrowBack} from "react-icons/io5";
+import type { State } from "../store";
+import { connect, type ConnectedProps } from "react-redux";
+import { showsMapSelector } from "../selectors/Shows";
+import { loadShowAction } from "../actions/Shows";
 
-type ShowDetailPageProps = WithRouterProps;
+type ownProps = WithRouterProps;
 
-const ShowDetailPage: FC<WithRouterProps> = ({ params }) => {
-  console.log(params);
+type ShowDetailPageProps = ReduxProps& ownProps;
+
+const ShowDetailPage: FC<ShowDetailPageProps> = ({params,show,loadShow }) => {
+
+  useEffect(()=>{
+    loadShow(+params.id);
+  },[params.id])
+
+  
+  if(!show){
+    return <div className="text-3xl font-bold text-blue-950">Loading show details</div>
+  }
+
   return (
     <div className="mt-2">
         <Link className="flex items-center" to="/"><IoArrowBack/>Back</Link>
-      <h2 className="text-4xl font-semibold tracking-wide">The Witcher</h2>
+      <h2 className="text-4xl font-semibold tracking-wide">{show!.name}</h2>
       <div className="flex space-x-3 my-2 bg-gray-300 p-2 rounded-sm">
-        <GenrePill name="Action" />
-        <GenrePill name="Fiction" />
-        <GenrePill name="Thriller" />
-        <GenrePill name="Violence" />
+        {show!.genres.map((genre)=><GenrePill name={genre} key={genre}/>)}
       </div>
       <div className="mt-2 flex">
         <img
-          src="https://static.tvmaze.com/uploads/images/medium_portrait/423/1058422.jpg"
+          src={show!.image?.medium || "https://static.tvmaze.com/uploads/images/medium_portrait/423/1058422.jpg"}
           alt=""
           className="object-cover object-center w-full rounded-t-md h-72"
         />
         <div className="ml-2">
-          <p>
-            Based on the best-selling fantasy series, The Witcher is an epic
-            tale of fate and family. Geralt of Rivia, a solitary monster hunter,
-            struggles to find his place in a world where people often prove more
-            wicked than beasts. But when destiny hurtles him toward a powerful
-            sorceress, and a young princess with a dangerous secret, the three
-            must learn to navigate the increasingly volatile Continent together.
-          </p>
+          <p dangerouslySetInnerHTML={{__html: show?.summary || ""}}></p>
           <p className="mt-2 text-lg font-bold border border-gray-700 rounded-md px-2 py-1 max-w-max">
-            Rating: <span className="text-gray-700">9.5/10</span>
+            Rating: <span className="text-gray-700">{show!.rating.average}/10</span>
           </p>
         </div>
       </div>
@@ -97,4 +102,29 @@ const ShowDetailPage: FC<WithRouterProps> = ({ params }) => {
   );
 };
 
-export default withRouter(ShowDetailPage);
+const mapStateToProps = (state: State, ownProps: ownProps) => {
+  const showsMap = showsMapSelector(state);
+  const  id  = ownProps.params.id; 
+  return { show: id ? showsMap[Number(id)] : undefined };
+};
+
+const mapDispatchToProps={
+  loadShow : loadShowAction
+}
+
+
+const connector= connect(mapStateToProps,mapDispatchToProps);
+type ReduxProps = ConnectedProps<typeof connector>;
+
+export default withRouter(connector(ShowDetailPage));
+
+
+
+
+// By default: React shows HTML strings as plain text ({show.summary} → you see <b>text</b>).
+// With dangerouslySetInnerHTML: React injects the string as real HTML (dangerouslySetInnerHTML={{__html: show.summary}} → you see text in bold).
+// Why used: When API gives HTML (e.g., summaries, descriptions with tags).
+// Why “dangerous”: If content isn’t trusted, it can cause XSS attacks.
+// Use only when: You must render HTML from a safe/trusted source.
+//Before = raw tags as text
+//After = formatted HTML rendered
